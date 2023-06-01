@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Show {
+  id            BigInt        @id @default(autoincrement())
+  name          String        @db.VarChar(256)
+  description   String        @db.VarChar(1000)
+  country       String        @db.VarChar(10)
+  imagePath     String        @db.VarChar(100)
+
+  episodes      Episode[]
+}
+
+model Episode {
+  id            BigInt        @id @default(autoincrement())
+  number        Int           @db.SmallInt
+  season        Int           @db.SmallInt
+  name          String        @db.VarChar(256)
+  airDate       DateTime      @db.Date
+
+  show          Show          @relation(fields: [showId], references: [id])
+  showId        BigInt
+}
