@@ -9,8 +9,8 @@ datasource db {
 
 model Show {
   id            BigInt        @id @default(autoincrement())
-  name          String        @db.VarChar(256)
-  description   String        @db.VarChar(1000)
+  name          String        @db.VarChar(256) @unique
+  description   String        @db.VarChar(2000)
   country       String        @db.VarChar(10)
   imagePath     String        @db.VarChar(100)
 
