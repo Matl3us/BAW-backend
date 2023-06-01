@@ -16,6 +16,21 @@ BigInt.prototype.toJSON = function () {
 };
 
 app.get('/shows', async (req, res) => {
+  const page = req.query.page ?? 1;
+  const shows = await prisma.show.findMany({
+    skip: (page - 1) * 20,
+    take: 20,
+  });
+
+  const result = {};
+
+  result.nextPage = shows.length < 20 ? null : `/shows?page=${+page + 1}`;
+  result.shows = JSON.parse(JSON.stringify(shows));
+
+  res.json(result);
+});
+
+app.get('/shows/all', async (req, res) => {
   const shows = await prisma.show.findMany();
   res.json(shows);
 });
