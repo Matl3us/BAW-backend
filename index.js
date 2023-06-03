@@ -1,84 +1,26 @@
-const { PrismaClient } = require('@prisma/client');
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
 const port = 3000;
-const prisma = new PrismaClient();
 
-app.use(cors());
-app.use(express.json());
+const loginRouter = require('./controllers/login');
+const usersRouter = require('./controllers/users');
+const showsRouter = require('./controllers/shows');
+const episodesRouter = require('./controllers/episodes');
 
-// BigInt toJSON function inplementation
+// BigInt toJSON function implementation
 // eslint-disable-next-line no-extend-native, func-names
 BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-app.get('/shows', async (req, res) => {
-  const page = req.query.page ?? 1;
-  const shows = await prisma.show.findMany({
-    skip: (page - 1) * 20,
-    take: 20,
-  });
+app.use(cors());
+app.use(express.json());
 
-  const result = {};
-
-  result.nextPage = shows.length < 20 ? null : `/shows?page=${+page + 1}`;
-  result.shows = JSON.parse(JSON.stringify(shows));
-
-  res.json(result);
-});
-
-app.get('/shows/all', async (req, res) => {
-  const shows = await prisma.show.findMany();
-  res.json(shows);
-});
-
-app.get('/shows/:id', async (req, res) => {
-  const show = await prisma.show.findMany({
-    where: { id: Number(req.params.id) },
-    include: {
-      episodes: true,
-    },
-  });
-
-  res.json(show);
-});
-
-app.post('/shows', async (req, res) => {
-  const {
-    name, description, country, imagePath,
-  } = req.body;
-
-  const result = await prisma.show.create({
-    data: {
-      name,
-      description,
-      country,
-      imagePath,
-    },
-  });
-
-  res.json(result);
-});
-
-app.post('/episodes', async (req, res) => {
-  const {
-    number, season, name, airDate, showName,
-  } = req.body;
-
-  const result = await prisma.episode.create({
-    data: {
-      number,
-      season,
-      name,
-      airDate: new Date(airDate),
-      show: { connect: { name: showName } },
-    },
-  });
-
-  res.json(result);
-});
+app.use('/api/login', loginRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/shows', showsRouter);
+app.use('/api/episodes', episodesRouter);
 
 app.listen(port, () => console.log(`App listening on port ${port}!`));
