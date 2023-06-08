@@ -1,8 +1,6 @@
 const usersRouter = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
-
-const prisma = new PrismaClient();
+const { prisma } = require('../utils/config');
 
 usersRouter.post('/', async (req, res) => {
   const { username, email, password } = req.body;

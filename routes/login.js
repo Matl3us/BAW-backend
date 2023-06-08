@@ -1,10 +1,7 @@
 const loginRouter = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const config = require('../utils/config');
-
-const prisma = new PrismaClient();
+const { prisma, SECRET } = require('../utils/config');
 
 loginRouter.post('/', async (req, res) => {
   const { email, password } = req.body;
@@ -23,13 +20,9 @@ loginRouter.post('/', async (req, res) => {
     });
   }
 
-  const userForToken = {
-    username: user.username,
-    email: user.email,
+  const token = jwt.sign({
     id: user.id,
-  };
-
-  const token = jwt.sign(userForToken, config.SECRET, { expiresIn: 60 * 60 });
+  }, SECRET, { expiresIn: 60 * 60 });
 
   return res
     .status(200)

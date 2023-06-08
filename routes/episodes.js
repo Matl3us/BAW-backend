@@ -1,7 +1,5 @@
 const episodesRouter = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { prisma } = require('../utils/config');
 
 episodesRouter.post('/', async (req, res) => {
   const {

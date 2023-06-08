@@ -1,7 +1,5 @@
 const showsRouter = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const { prisma } = require('../utils/config');
 
 showsRouter.get('/', async (req, res) => {
   const page = req.query.page ?? 1;
@@ -25,7 +23,7 @@ showsRouter.get('/all', async (req, res) => {
 
 showsRouter.get('/:id', async (req, res) => {
   const show = await prisma.show.findMany({
-    where: { id: Number(req.params.id) },
+    where: { id: BigInt(req.params.id) },
     include: {
       episodes: true,
     },

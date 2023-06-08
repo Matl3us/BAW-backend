@@ -7,14 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            BigInt        @id @default(autoincrement())
+  username      String        @db.VarChar(50)   @unique
+  email         String        @db.VarChar(256)  @unique
+  password      String        @db.VarChar(256)
+
+  showList      List[]
+}
+
 model Show {
   id            BigInt        @id @default(autoincrement())
-  name          String        @db.VarChar(256) @unique
+  name          String        @db.VarChar(256)  @unique
   description   String        @db.VarChar(2000)
   country       String        @db.VarChar(10)
   imagePath     String        @db.VarChar(100)
 
   episodes      Episode[]
+  users         List[]
 }
 
 model Episode {
@@ -28,9 +38,11 @@ model Episode {
   showId        BigInt
 }
 
-model User {
-  id            BigInt        @id @default(autoincrement())
-  username      String        @unique
-  email         String        @unique
-  password      String
+model List {
+  id            Int           @id @default(autoincrement())
+
+  user          User          @relation(fields: [userId], references: [id])
+  userId        BigInt      
+  show          Show          @relation(fields: [showId], references: [id])
+  showId        BigInt
 }
