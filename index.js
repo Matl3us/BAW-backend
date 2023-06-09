@@ -9,6 +9,7 @@ const usersRouter = require('./routes/users');
 const showsRouter = require('./routes/shows');
 const episodesRouter = require('./routes/episodes');
 const listsRouter = require('./routes/lists');
+const ratingsRouter = require('./routes/ratings');
 const { swaggerUi, swaggerSpec } = require('./utils/swagger');
 
 // BigInt toJSON function implementation
@@ -26,5 +27,6 @@ app.use('/api/users', usersRouter);
 app.use('/api/shows', showsRouter);
 app.use('/api/episodes', episodesRouter);
 app.use('/api/lists', listsRouter);
+app.use('/api/ratings', ratingsRouter);
 
 app.listen(port, () => console.log(`App listening on port ${port}!`));

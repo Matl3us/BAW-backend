@@ -1,9 +1,10 @@
-const listsRouter = require('express').Router();
+const ratingsRouter = require('express').Router();
 const { prisma } = require('../utils/config');
 const { getTokenFrom } = require('../utils/token');
 
-listsRouter.post('/', async (req, res) => {
-  const { showId } = req.body;
+ratingsRouter.post('/', async (req, res) => {
+  const { showId, score, comment } = req.body;
+
   const userId = await getTokenFrom(req);
 
   if (!userId) {
@@ -12,8 +13,17 @@ listsRouter.post('/', async (req, res) => {
     });
   }
 
-  const result = await prisma.list.create({
+  if (score < 0 || score > 10) {
+    return res.status(400).json({
+      error: 'invalid score value',
+    });
+  }
+
+  const result = await prisma.rating.create({
     data: {
+      score: Number(score),
+      comment,
+      added: new Date().toISOString(),
       user: { connect: { id: BigInt(userId) } },
       show: { connect: { id: BigInt(showId) } },
     },
@@ -22,10 +32,10 @@ listsRouter.post('/', async (req, res) => {
   return res.status(201).json(result);
 });
 
-listsRouter.get('/', async (req, res) => {
+ratingsRouter.get('/user', async (req, res) => {
   const userId = await getTokenFrom(req);
 
-  const shows = await prisma.list.findMany({
+  const ratings = await prisma.rating.findMany({
     where: {
       showId: BigInt(userId),
     },
@@ -34,7 +44,7 @@ listsRouter.get('/', async (req, res) => {
     },
   });
 
-  res.json(shows);
+  res.json(ratings);
 });
 
-module.exports = listsRouter;
+module.exports = ratingsRouter;

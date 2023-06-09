@@ -22,12 +22,21 @@ showsRouter.get('/all', async (req, res) => {
 });
 
 showsRouter.get('/:id', async (req, res) => {
-  const show = await prisma.show.findMany({
+  const show = await prisma.show.findFirst({
     where: { id: BigInt(req.params.id) },
     include: {
       episodes: true,
+      ratings: true,
     },
   });
+
+  const aggregation = await prisma.rating.aggregate({
+    where: { showId: BigInt(req.params.id) },
+    _avg: {
+      score: true,
+    },
+  });
+  show.score = aggregation._avg.score;
 
   res.json(show);
 });
