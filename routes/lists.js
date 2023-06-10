@@ -27,7 +27,7 @@ listsRouter.get('/', async (req, res) => {
 
   const shows = await prisma.list.findMany({
     where: {
-      showId: BigInt(userId),
+      userId: BigInt(userId),
     },
     include: {
       show: true,
@@ -35,6 +35,28 @@ listsRouter.get('/', async (req, res) => {
   });
 
   res.json(shows);
+});
+
+listsRouter.delete('/', async (req, res) => {
+  const { showId } = req.body;
+  const userId = await getTokenFrom(req);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'invalid user token',
+    });
+  }
+
+  await prisma.list.deleteMany({
+    where: {
+      showId: BigInt(showId),
+      userId: BigInt(userId),
+    },
+  });
+
+  return res.status(201).json(
+    { message: 'deleted successfully' },
+  );
 });
 
 module.exports = listsRouter;

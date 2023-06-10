@@ -41,7 +41,7 @@ model Episode {
 }
 
 model List {
-  id            Int           @id @default(autoincrement())
+  id            BigInt           @id @default(autoincrement())
 
   user          User          @relation(fields: [userId], references: [id])
   userId        BigInt      
@@ -50,7 +50,7 @@ model List {
 }
 
 model Rating {
-  id            Int           @id @default(autoincrement())
+  id            BigInt           @id @default(autoincrement())
   score         Int             
   comment       String        @db.VarChar(1000)
   added         DateTime      @default(now())

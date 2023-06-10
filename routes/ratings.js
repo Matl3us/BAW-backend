@@ -37,7 +37,7 @@ ratingsRouter.get('/user', async (req, res) => {
 
   const ratings = await prisma.rating.findMany({
     where: {
-      showId: BigInt(userId),
+      userId: BigInt(userId),
     },
     include: {
       show: true,
@@ -45,6 +45,51 @@ ratingsRouter.get('/user', async (req, res) => {
   });
 
   res.json(ratings);
+});
+
+ratingsRouter.put('/:id', async (req, res) => {
+  const { score, comment } = req.body;
+  const userId = await getTokenFrom(req);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'invalid user token',
+    });
+  }
+
+  await prisma.rating.update({
+    data: {
+      score: Number(score),
+      comment,
+      added: new Date().toISOString(),
+    },
+    where: { id: BigInt(req.params.id) },
+  });
+
+  return res.status(200).json(
+    { message: 'updated successfully' },
+  );
+});
+
+ratingsRouter.delete('/:id', async (req, res) => {
+  const userId = await getTokenFrom(req);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'invalid user token',
+    });
+  }
+
+  await prisma.list.deleteMany({
+    where: {
+      id: BigInt(req.params.id),
+      userId: BigInt(userId),
+    },
+  });
+
+  return res.status(201).json(
+    { message: 'deleted successfully' },
+  );
 });
 
 module.exports = ratingsRouter;
