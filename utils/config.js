@@ -8,8 +8,10 @@ prisma.$executeRaw('ALTER TABLE "Rating" ADD CONSTRAINT "rating_range" CHECK ("s
 
 // .env variables
 const { SECRET } = process.env;
+const { validationResult } = require('express-validator');
 
 module.exports = {
   prisma,
   SECRET,
+  validationResult,
 };

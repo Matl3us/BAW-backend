@@ -3,37 +3,32 @@ const { prisma } = require('../utils/config');
 
 showsRouter.get('/', async (req, res) => {
   const page = req.query.page ?? 1;
-  const search = req.query.search ?? null;
 
-  const query = {
+  const shows = await prisma.show.findMany({
     skip: (page - 1) * 20,
     take: 20,
-  };
-
-  if (search) {
-    query.where = {
-      name: {
-        contains: search,
-        mode: 'insensitive',
-      },
-    };
-  }
-
-  const shows = await prisma.show.findMany(query);
+  });
 
   const result = {};
 
   result.nextPage = shows.length < 20 ? null : `/shows?page=${+page + 1}`;
-  if (search && shows.length >= 20) {
-    result.nextPage = result.nextPage.concat(`&search=${search}`);
-  }
+  result.prevPage = page > 1 ? `/shows?page=${+page - 1}` : null;
+
   result.shows = JSON.parse(JSON.stringify(shows));
 
   res.json(result);
 });
 
 showsRouter.get('/all', async (req, res) => {
-  const shows = await prisma.show.findMany();
+  const search = req.query.search ?? null;
+  const shows = await prisma.show.findMany({
+    where: {
+      name: {
+        contains: search,
+        mode: 'insensitive',
+      },
+    },
+  });
   res.json(shows);
 });
 

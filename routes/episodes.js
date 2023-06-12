@@ -1,22 +1,36 @@
 const episodesRouter = require('express').Router();
-const { prisma } = require('../utils/config');
+const { prisma, validationResult } = require('../utils/config');
+const { validateEpisodeBody } = require('../utils/validation');
 
-episodesRouter.post('/', async (req, res) => {
+/**
+ * Add a new episode to the database
+*/
+episodesRouter.post('/', validateEpisodeBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
+
   const {
     number, season, name, airDate, showName,
   } = req.body;
 
-  const result = await prisma.episode.create({
-    data: {
-      number,
-      season,
-      name,
-      airDate: new Date(airDate),
-      show: { connect: { name: showName } },
-    },
-  });
+  try {
+    const result = await prisma.episode.create({
+      data: {
+        number,
+        season,
+        name,
+        airDate: new Date(airDate),
+        show: { connect: { name: showName } },
+      },
+    });
 
-  res.status(201).json(result);
+    return res.status(201).json(result);
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
 module.exports = episodesRouter;
