@@ -29,7 +29,12 @@ showsRouter.get('/all', async (req, res) => {
       },
     },
   });
-  res.json(shows);
+
+  const result = {
+    shows,
+  };
+
+  res.json(result);
 });
 
 showsRouter.get('/:id', async (req, res) => {
