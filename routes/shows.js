@@ -11,7 +11,7 @@ showsRouter.get('/', async (req, res) => {
 
   const result = {};
 
-  result.nextPage = shows.length < 20 ? null : `/shows?page=${+page + 1}`;
+  result.nextPage = shows.length <= 20 ? null : `/shows?page=${+page + 1}`;
   result.prevPage = page > 1 ? `/shows?page=${+page - 1}` : null;
 
   result.shows = JSON.parse(JSON.stringify(shows));
