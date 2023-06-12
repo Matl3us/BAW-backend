@@ -3,14 +3,30 @@ const { prisma } = require('../utils/config');
 
 showsRouter.get('/', async (req, res) => {
   const page = req.query.page ?? 1;
-  const shows = await prisma.show.findMany({
+  const search = req.query.search ?? null;
+
+  const query = {
     skip: (page - 1) * 20,
     take: 20,
-  });
+  };
+
+  if (search) {
+    query.where = {
+      name: {
+        contains: search,
+        mode: 'insensitive',
+      },
+    };
+  }
+
+  const shows = await prisma.show.findMany(query);
 
   const result = {};
 
   result.nextPage = shows.length < 20 ? null : `/shows?page=${+page + 1}`;
+  if (search && shows.length >= 20) {
+    result.nextPage = result.nextPage.concat(`&search=${search}`);
+  }
   result.shows = JSON.parse(JSON.stringify(shows));
 
   res.json(result);
