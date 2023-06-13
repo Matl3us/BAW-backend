@@ -1,19 +1,27 @@
 const usersRouter = require('express').Router();
 const bcrypt = require('bcrypt');
-const { prisma } = require('../utils/config');
+const { prisma, validationResult } = require('../utils/config');
 const { getTokenFrom } = require('../utils/token');
+const {
+  validateRegisterBody,
+  validateUpdatePasswordBody,
+} = require('../utils/validation');
 
 const saltRounds = 10;
 
-usersRouter.post('/register', async (req, res) => {
+/**
+ * Register a new user
+ */
+usersRouter.post('/register', validateRegisterBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const { username, email, password } = req.body;
 
   const existingUser = await prisma.user.findMany({
     where: {
-      OR: [
-        { username: String(username) },
-        { email: String(email) },
-      ],
+      OR: [{ username: String(username) }, { email: String(email) }],
     },
   });
 
@@ -25,18 +33,29 @@ usersRouter.post('/register', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, saltRounds);
 
-  const user = await prisma.user.create({
-    data: {
-      username,
-      email,
-      password: passwordHash,
-    },
-  });
+  try {
+    await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: passwordHash,
+      },
+    });
 
-  return res.status(201).json(user);
+    return res.status(201).json({ message: 'user created' });
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
-usersRouter.put('/password', async (req, res) => {
+/**
+ * Change user's password
+ */
+usersRouter.put('/password', validateUpdatePasswordBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const { newPassword, oldPassword } = req.body;
   const userId = await getTokenFrom(req);
 
@@ -62,18 +81,25 @@ usersRouter.put('/password', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(newPassword, saltRounds);
 
-  await prisma.user.update({
-    data: {
-      password: passwordHash,
-    },
-    where: { id: BigInt(userId) },
-  });
+  try {
+    await prisma.user.update({
+      data: {
+        password: passwordHash,
+      },
+      where: { id: BigInt(userId) },
+    });
 
-  return res.status(200).json({
-    message: 'password changed successfully',
-  });
+    return res.status(200).json({
+      message: 'password changed successfully',
+    });
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
+/**
+ * Get user's detailed information
+ */
 usersRouter.get('/profile', async (req, res) => {
   const userId = await getTokenFrom(req);
 
@@ -83,13 +109,17 @@ usersRouter.get('/profile', async (req, res) => {
     });
   }
 
-  const user = await prisma.user.findFirst({
-    where: { id: BigInt(userId) },
-  });
+  try {
+    const user = await prisma.user.findFirst({
+      where: { id: BigInt(userId) },
+    });
 
-  delete user.password;
+    delete user.password;
 
-  return res.status(200).json(user);
+    return res.status(200).json(user);
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
 module.exports = usersRouter;

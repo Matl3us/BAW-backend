@@ -3,8 +3,8 @@ const { prisma, validationResult } = require('../utils/config');
 const { validateEpisodeBody } = require('../utils/validation');
 
 /**
- * Add a new episode to the database
-*/
+ * Add a new episode
+ */
 episodesRouter.post('/', validateEpisodeBody, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,7 +16,7 @@ episodesRouter.post('/', validateEpisodeBody, async (req, res) => {
   } = req.body;
 
   try {
-    const result = await prisma.episode.create({
+    await prisma.episode.create({
       data: {
         number,
         season,
@@ -26,9 +26,8 @@ episodesRouter.post('/', validateEpisodeBody, async (req, res) => {
       },
     });
 
-    return res.status(201).json(result);
+    return res.status(201).json({ message: 'episode saved' });
   } catch (error) {
-    console.log(error);
     return res.status(400).json({ error: 'invalid request' });
   }
 });

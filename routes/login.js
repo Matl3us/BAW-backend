@@ -1,9 +1,17 @@
 const loginRouter = require('express').Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { prisma, SECRET } = require('../utils/config');
+const { prisma, SECRET, validationResult } = require('../utils/config');
+const { validateLoginBody } = require('../utils/validation');
 
-loginRouter.post('/', async (req, res) => {
+/**
+ * User login
+ */
+loginRouter.post('/', validateLoginBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const { email, password } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -14,15 +22,19 @@ loginRouter.post('/', async (req, res) => {
 
   const passwordCorrect = user === null ? false : await bcrypt.compare(password, user.password);
 
-  if (!(user && passwordCorrect)) {
+  if (!passwordCorrect) {
     return res.status(401).json({
       error: 'invalid email or password',
     });
   }
 
-  const token = jwt.sign({
-    id: user.id,
-  }, SECRET, { expiresIn: 60 * 60 });
+  const token = jwt.sign(
+    {
+      id: user.id,
+    },
+    SECRET,
+    { expiresIn: 60 * 60 },
+  );
 
   return res
     .status(200)

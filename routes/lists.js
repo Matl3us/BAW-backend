@@ -1,8 +1,16 @@
 const listsRouter = require('express').Router();
-const { prisma } = require('../utils/config');
+const { prisma, validationResult } = require('../utils/config');
 const { getTokenFrom } = require('../utils/token');
+const { validateListBody } = require('../utils/validation');
 
-listsRouter.post('/', async (req, res) => {
+/**
+ * Add a new tv show to the watch list
+ */
+listsRouter.post('/', validateListBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const { showId } = req.body;
   const userId = await getTokenFrom(req);
 
@@ -12,18 +20,34 @@ listsRouter.post('/', async (req, res) => {
     });
   }
 
-  const result = await prisma.list.create({
-    data: {
-      user: { connect: { id: BigInt(userId) } },
-      show: { connect: { id: BigInt(showId) } },
-    },
-  });
-
-  return res.status(201).json(result);
+  try {
+    await prisma.list.create({
+      data: {
+        user: { connect: { id: BigInt(userId) } },
+        show: { connect: { id: BigInt(showId) } },
+      },
+    });
+    return res.status(201).json({ message: 'tv show added to the watchlist' });
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
+/**
+ * Get a list of tv shows from user's watchlist
+ */
 listsRouter.get('/', async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const userId = await getTokenFrom(req);
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'invalid user token',
+    });
+  }
 
   const shows = await prisma.list.findMany({
     where: {
@@ -34,10 +58,17 @@ listsRouter.get('/', async (req, res) => {
     },
   });
 
-  res.json(shows);
+  return res.status(200).json(shows);
 });
 
-listsRouter.delete('/', async (req, res) => {
+/**
+ * Delete tv show from user's watchlist
+ */
+listsRouter.delete('/', validateListBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const { showId } = req.body;
   const userId = await getTokenFrom(req);
 
@@ -47,16 +78,18 @@ listsRouter.delete('/', async (req, res) => {
     });
   }
 
-  await prisma.list.deleteMany({
-    where: {
-      showId: BigInt(showId),
-      userId: BigInt(userId),
-    },
-  });
+  try {
+    await prisma.list.deleteMany({
+      where: {
+        showId: BigInt(showId),
+        userId: BigInt(userId),
+      },
+    });
 
-  return res.status(201).json(
-    { message: 'deleted successfully' },
-  );
+    return res.status(204).json({ message: 'deleted successfully' });
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
 module.exports = listsRouter;

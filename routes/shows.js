@@ -1,11 +1,22 @@
 const showsRouter = require('express').Router();
-const { prisma } = require('../utils/config');
+const { prisma, validationResult } = require('../utils/config');
+const {
+  validateSearchQuery,
+  validateShowBody,
+} = require('../utils/validation');
 
+/**
+ * Get a paginated list of tv shows
+ */
 showsRouter.get('/', async (req, res) => {
   const page = req.query.page ?? 1;
 
+  if (Number.isNaN(+page)) {
+    return res.status(400).json({ error: 'invalid page number' });
+  }
+
   const shows = await prisma.show.findMany({
-    skip: (page - 1) * 20,
+    skip: (+page - 1) * 20,
     take: 20,
   });
 
@@ -16,11 +27,18 @@ showsRouter.get('/', async (req, res) => {
 
   result.shows = JSON.parse(JSON.stringify(shows));
 
-  res.json(result);
+  return res.status(200).json(result);
 });
 
-showsRouter.get('/all', async (req, res) => {
-  const search = req.query.search ?? null;
+/**
+ * Get all tv shows with search query
+ */
+showsRouter.get('/all', validateSearchQuery, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
+  const { search } = req.query;
   const shows = await prisma.show.findMany({
     where: {
       name: {
@@ -34,44 +52,62 @@ showsRouter.get('/all', async (req, res) => {
     shows,
   };
 
-  res.json(result);
+  return res.status(200).json(result);
 });
 
+/**
+ * Get a details of a tv show
+ */
 showsRouter.get('/:id', async (req, res) => {
-  const show = await prisma.show.findFirst({
-    where: { id: BigInt(req.params.id) },
-    include: {
-      episodes: true,
-      ratings: true,
-    },
-  });
+  try {
+    const show = await prisma.show.findFirst({
+      where: { id: BigInt(req.params.id) },
+      include: {
+        episodes: true,
+        ratings: true,
+      },
+    });
 
-  const aggregation = await prisma.rating.aggregate({
-    where: { showId: BigInt(req.params.id) },
-    _avg: {
-      score: true,
-    },
-  });
-  show.score = aggregation._avg.score;
+    const aggregation = await prisma.rating.aggregate({
+      where: { showId: BigInt(req.params.id) },
+      _avg: {
+        score: true,
+      },
+    });
+    show.score = aggregation._avg.score;
 
-  res.json(show);
+    return res.status(200).json(show);
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
-showsRouter.post('/', async (req, res) => {
+/**
+ * Add a new tv show
+ */
+showsRouter.post('/', validateShowBody, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array().map((e) => e.msg) });
+  }
   const {
     name, description, country, imagePath,
   } = req.body;
 
-  const result = await prisma.show.create({
-    data: {
-      name,
-      description,
-      country,
-      imagePath,
-    },
-  });
+  try {
+    await prisma.show.create({
+      data: {
+        name,
+        description,
+        country,
+        imagePath,
+      },
+    });
 
-  res.status(201).json(result);
+    return res.status(201).json({ message: 'show saved' });
+  } catch {
+    return res.status(400).json({ error: 'invalid request' });
+  }
 });
 
 module.exports = showsRouter;
