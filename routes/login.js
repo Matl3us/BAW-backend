@@ -33,7 +33,7 @@ loginRouter.post('/', validateLoginBody, async (req, res) => {
       id: user.id,
     },
     SECRET,
-    { expiresIn: 60 * 60 },
+    { expiresIn: '2 days' },
   );
 
   return res
